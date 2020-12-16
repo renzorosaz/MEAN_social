@@ -1,7 +1,9 @@
 'use strict'
 var bcrypt = require('bcrypt-nodejs');
-const { response } = require('../app');
+
 var User = require('../models/user');
+
+var jwt= require('../services/jwt');
 
 
 function home(req, res) {
@@ -66,25 +68,38 @@ function saveUser(req, res) {
     }
 }
 
-function loginUser(req,res){
-    var params=req.body;
-    var email= params.email;
-    var password= params.password;
+function loginUser(req, res) {
+    var params = req.body;
+    var email = params.email;
+    var password = params.password;
 
-    User.findOne({email:email,password:password},(err,user)=>{
-        if(err) return res.status(500).send({message:'Error en la petición'});
+    User.findOne({ email: email }, (err, user) => {
 
-        if(user){
-            bcrypt.compare(password,user.password,(err,check)=>{
-                if(check){
-                    //devolver datos de usuario
+        if (err) return res.status(500).send({ message: 'Error en la petición' });
+
+        if (user) {
+            bcrypt.compare(password, user.password, (err, check) => {
+                if (check) {
+
+                    if (params.gettoken) {
+                        //devolver token
+                        //generar el token
+                        return res.status(200).send({
+                            token: jwt.createToken(user)
+                        });
+                    } else {
+                        user.password = undefined;
+                        return res.status(200).send({ user })
+                    }
+
+
                 }
-                else{
-                    if(err) return res.status(400).send({message:'El usuario no se ha podido identificar'});
+                else {
+                    if (err) return res.status(400).send({ message: 'El usuario no se ha podido identificar' });
                 }
             });
-        } else{
-            if(err) return res.status(400).send({message:'El usuario no se ha podido identificar'});
+        } else {
+            if (err) return res.status(400).send({ message: 'El usuario no se ha podido identificar' });
         }
     });
 }
@@ -92,5 +107,6 @@ function loginUser(req,res){
 module.exports = {
     home,
     pruebas,
-    saveUser
+    saveUser,
+    loginUser
 }
