@@ -1,8 +1,11 @@
 'use strict'
 var bcrypt = require('bcrypt-nodejs');
 var mongoosePaginate = require('mongoose-pagination');
-var User = require('../models/user');
+var fs = require('fs');
+var path = require('path');
 
+
+var User = require('../models/user');
 var jwt = require('../services/jwt');
 
 
@@ -11,7 +14,7 @@ function home(req, res) {
     res.status(200).send({
         message: 'Acción de pruebas en el servidor de NodeJS'
     });
-};
+}
 
 function pruebas(req, res) {
     console.log(req.body);
@@ -69,6 +72,7 @@ function saveUser(req, res) {
         });
     }
 }
+
 //Login de Usuario
 function loginUser(req, res) {
     var params = req.body;
@@ -173,21 +177,50 @@ function updateUser(req, res) {
 function uploadImage(req, res) {
     var userId = req.params.id;
 
-    if (userId != req.user.sub) {
-        return res.status(500).send({ message: "No tienes permiso para actualizar los datos del usuarios" });
-    }
-    if (req.files) {
-        var file_path = req.files.image.path;
-        console.log(file_path);
+
+    if (req.file) {
+        console.log(req.file);
+        
+        var file_path = file.image.path;
         var file_split = file_path.split('\\');
-        console.log(file_split);
-    }
-    else{
-        return res.status(200).send({ message:"No se han subido imagenes" });
+        var file_name = file_split[2];
+        var ext_split = fil.name.split('\.');
+        var file_ext = ext_split[1]
+
+        if (userId != req.user.sub) {
+           return   removeFilesOfUploads(res, file_path, 'No tienes permisos para actualizar los datos del usuario');
+
+        }
+
+        if (file_ext == 'png' || file_ext == 'gif' || file_ext == 'jpg' || file_ext == 'jpeg') {
+
+            User.findByIdAndUpdate(userId, { image: file_name }, { new: true }, (err, userUpdated) => {
+                if (err) return res.status(500).send({ message: "Error en la petición" });
+                if (!userUpdated) return res.status(404).send({ message: 'No se ha podido actualizar el usuario' });
+
+                return res.status(200).send({ user: userUpdated });
+
+            })
+
+        } else {
+          return    removeFilesOfUploads(res, file_path, 'Extension no valida');
+        }
+
+        console.log(file_path);
+
+    } else {
+
+        res.status(200).send({ message: 'No has subido ninguna imagen..' });
+
     }
 
 }
 
+function removeFilesOfUploads(res, file_path, message) {
+    fs.unlink(file_path, (err) => {
+        return res.status(200).send({ message: message });
+    });
+}
 
 
 module.exports = {
@@ -200,3 +233,4 @@ module.exports = {
     updateUser,
     uploadImage
 }
+
