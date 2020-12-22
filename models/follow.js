@@ -9,4 +9,4 @@ var FollowSchema = Schema({
 });
 
 
-module.exports= mongoose.model('FOllow',FollowSchema);
+module.exports= mongoose.model('Follow',FollowSchema);

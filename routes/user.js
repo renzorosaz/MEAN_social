@@ -47,6 +47,7 @@ api.get('/users/:page?', md_auth.ensureAuth, UserController.getUsers);
 api.put('/update-user/:id', md_auth.ensureAuth, UserController.updateUser);
 //api.post('/upload-image-user/:id',[md_auth.ensureAuth,mul_upload],UserController.uploadImage);
 api.post('/upload-image-user/:id', [md_auth.ensureAuth, mul_upload.single('image')], UserController.uploadImage);
+api.get('/get-image-user/:imageFile', md_auth.ensureAuth, UserController.getImageFIle);
 
 
 module.exports = api;

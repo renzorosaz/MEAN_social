@@ -2,7 +2,7 @@
 
 const { Schema } = require("mongoose");
 
-var mongoose= reuire('mongoose');
+var mongoose= require('mongoose');
 var Schema= mongoose.Schema;
 
 var MessageSchema= Schema({
