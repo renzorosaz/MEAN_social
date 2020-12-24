@@ -1,10 +1,11 @@
 'use strict'
 var bcrypt = require('bcrypt-nodejs');
+
 var mongoosePaginate = require('mongoose-pagination');
 var fs = require('fs');
 var path = require('path');
 
-
+var Follow = require('../models/follow');
 var User = require('../models/user');
 var jwt = require('../services/jwt');
 
@@ -115,13 +116,46 @@ function loginUser(req, res) {
 function getUser(req, res) {
     var userId = req.params.id;
 
+
     User.findById(userId, (err, user) => {
         if (err) return res.status(500).send({ message: "Error en la petición" });
 
         if (!user) return res.status(404).send({ message: "EL usuario no existe" });
 
-        return res.status(200).send({ user });
+
+        followThisUser(req.user.sub, userId).then((value) => {
+            user.password = undefined;
+
+            return res.status(200).send({
+                user,
+                following: value.following,
+                followed: value.followed
+            })
+        });
+
     });
+}
+
+async function followThisUser(identity_user_id, user_id) {
+    var following = await Follow.findOne({ user: identity_user_id, followed: user_id }).exec()
+       .then((following) => {
+           return following;
+       })
+       .catch((err) => {
+           return handleError(err);
+       });
+   var followed = await Follow.findOne({ user: user_id, followed: identity_user_id }).exec()
+       .then((followed) => {
+           return followed;
+       })
+       .catch((err) => {
+           return handleError(err);
+       });
+ 
+   return {
+       following: following,
+       followed: followed
+   };
 }
 
 //Devolver un listado de usuarios paginado
@@ -140,14 +174,56 @@ function getUsers(req, res) {
         if (err) return res.status(500).send({ message: "Error en la petición" });
         if (!users) return res.status(400).send({ message: "No hay usuarios dispnibles" });
 
-        return res.status(200).send({
-            users,
-            total,
-            pages: Math.ceil(total / itemsPerPage)
+        followUserIds(identity_user_id).then((value) => {
+
+
+            return res.status(200).send({
+                users,
+                users_following:value.following,
+                user_follow_me:value.followed,
+                total,
+                pages: Math.ceil(total / itemsPerPage)
+            });
+
+
         });
+
+
     });
 }
 
+async function followUserIds(user_id) {
+    var following = await Follow.find({ "user": user_id }).select({ '_id': 0, '__v': 0, 'user': 0 }).exec((err, follows) => {
+      return follows;        
+    });
+
+
+    var followed = await Follow.find({ "followed": user_id }).select({ '_id': 0, '__v': 0, 'followed': 0 }).exec((err, follows) => {
+       return follows;
+    });
+
+    //Procesar followings ids
+    var following_clean = [];
+
+    following.forEach((follow) => {
+        following_clean.push(follow.followed);
+    });
+    
+    console.log(follows_clean);
+
+    //Procesar followed ids
+    var followed_clean = [];
+
+    followed.forEach((follow) => {
+        followed_clean.push(follow.followed);
+    });
+    
+
+    return {
+        following: following_clean,
+        followed: followed_clean,
+    }
+}
 
 //Edición de datos de usuario
 function updateUser(req, res) {
@@ -180,7 +256,7 @@ function uploadImage(req, res) {
 
     if (req.file) {
         console.log(req.file);
-        
+
         var file_path = file.image.path;
         var file_split = file_path.split('\\');
         var file_name = file_split[2];
@@ -188,7 +264,7 @@ function uploadImage(req, res) {
         var file_ext = ext_split[1]
 
         if (userId != req.user.sub) {
-           return   removeFilesOfUploads(res, file_path, 'No tienes permisos para actualizar los datos del usuario');
+            return removeFilesOfUploads(res, file_path, 'No tienes permisos para actualizar los datos del usuario');
 
         }
 
@@ -203,7 +279,7 @@ function uploadImage(req, res) {
             })
 
         } else {
-          return    removeFilesOfUploads(res, file_path, 'Extension no valida');
+            return removeFilesOfUploads(res, file_path, 'Extension no valida');
         }
 
         console.log(file_path);
@@ -222,15 +298,15 @@ function removeFilesOfUploads(res, file_path, message) {
     });
 }
 
-function getImageFIle(req,res){
-    var image_file= req.params.imageFile;
-    var path_file= './uploads/users/'+image_file;
+function getImageFIle(req, res) {
+    var image_file = req.params.imageFile;
+    var path_file = './uploads/users/' + image_file;
 
-    fs.exists(path_file,(exists)=>{
-        if(exists){
+    fs.exists(path_file, (exists) => {
+        if (exists) {
             res.sendFile(path.resolve(path_file));
-        }else{
-            res.status(200).send({message: "No existe la imagen..."})
+        } else {
+            res.status(200).send({ message: "No existe la imagen..." })
         }
     });
 }
