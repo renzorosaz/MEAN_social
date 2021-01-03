@@ -43,7 +43,7 @@ function savePublication(req, res) {
 function getPublicationns(req,res){
 
     var page=1;
-    if(req,params.page){
+    if(req.params.page){
         page= req.params.page;
     }
 
@@ -55,10 +55,58 @@ function getPublicationns(req,res){
         follows.forEach((follow)=>{
             follows_clean.push(follow.followed);
         });
+
+        Publication.find({user:{"$in":follows_clean}}).sort('-created_at').populate('user').paginate(page,itemsPerPage,(err,publications,total)=>{
+            if (err) return res.status(500).send({ message: "Error al devolver publicaciones" });
+
+            if(!publications) return res.status(404).send({ message: "No hay publicaciones" });
+
+            return res.status(200).send({
+                total_items: total,
+                pages: Math.ceil(total / itemsPerPage),
+                page:page,
+                publications
+
+            });
+        });
+
+
     });
+    
+}
+
+function getPublication(req,res){
+    var  publicationId= req.params.id;
+    
+    Publication.findById(publicationId,(err,publication)=>{
+        if (err) return res.status(500).send({ message: "Error al devolver publicaciones" });
+
+        if(!publication) return res.status(404).send({ message: "No existe publicación" });
+
+        return res.status(200).send({publication});
+    });
+}
+
+function deletePublication(req,res){
+    var publicationId = req.params.id;
+
+    Publication.findByIdAndRemove(publicationId,(err,publicationRemoved)=>{
+        if (err) return res.status(500).send({ message: "Error al borrar publicaciones" });
+
+        if(!publication) return res.status(404).send({ message: "No se ha borrado la publicació" });
+
+        return res.status(200).send({publication: publicationRemoved});
+    });
+
 }
 
 module.exports = {
     probando,
-    savePublication
+    savePublication,
+    getPublicationns,
+    getPublication,
+    deletePublication
+
+
+
 }
