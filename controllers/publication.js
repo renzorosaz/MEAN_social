@@ -40,7 +40,7 @@ function savePublication(req, res) {
 
 }
 
-function getPublicationns(req, res) {
+function getPublications(req, res) {
 
     var page = 1;
     if (req.params.page) {
@@ -163,7 +163,7 @@ function getImageFIle(req, res) {
 module.exports = {
     probando,
     savePublication,
-    getPublicationns,
+    getPublications,
     getPublication,
     deletePublication,
     uploadImage,

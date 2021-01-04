@@ -43,8 +43,8 @@ function getReceivedMessages(req, res) {
     var itemsPerPage = 4;
 
     Message.find({ receiver: userId }).populate('emmitter','name surname image nick_id').paginate(page, itemsPerPage, (err, messages, total) => {
-        if (err) return res.status(500).send({ message: "Error en la petición" });
-        if (!messages) return res.status(404).send({ message: "No hay mensajes" });
+        if (err) return res.status(500).send({ message: 'Error en la petición'});
+        if (!messages) return res.status(404).send({ message: 'No hay mensajes' });
 
         return res.status(200).send({
             total: total,
@@ -66,8 +66,8 @@ function getEmmitMessages(req, res) {
     var itemsPerPage = 4;
 
     Message.find({ emitter: userId }).populate('emmitter receiver','name surname image nick_id').paginate(page, itemsPerPage, (err, messages, total) => {
-        if (err) return res.status(500).send({ message: "Error en la petición" });
-        if (!messages) return res.status(404).send({ message: "No hay mensajes" });
+        if (err) return res.status(500).send({ message: 'Error en la petición' });
+        if (!messages) return res.status(404).send({ message: 'No hay mensajes' });
 
         return res.status(200).send({
             total: total,
@@ -81,9 +81,20 @@ function getUnviewedMessages(req,res){
     var userId = req.user.sub;
 
     Message.find({receiver:userId,viewed:'false'}).exec((err,count)=>{
-        if (err) return res.status(500).send({ message: "Error en la petición" });
+        if (err) return res.status(500).send({ message: 'Error en la petición'});
         return res.status(200).send({
             'unviewed':count
+        });
+    });
+}
+
+function setViewedMessages (req,res){
+    var userId= req.user.sub;
+
+    Message.update({receiver:userId,viewed:'false'},{viewed:'true'},{"multi":true},(err,messagesUpdated)=>{
+        if (err) return res.status(500).send({ message: 'Error en la petición'});
+        return  res.status(200).send({
+           messages: messagesUpdated 
         });
     });
 }
@@ -93,5 +104,6 @@ module.exports = {
     saveMessage,
     getReceivedMessages,
     getEmmitMessages,
-    getUnviewedMessages
+    getUnviewedMessages,
+    setViewedMessages
 }
