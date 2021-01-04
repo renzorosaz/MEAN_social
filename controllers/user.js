@@ -8,7 +8,7 @@ var path = require('path');
 var Follow = require('../models/follow');
 var User = require('../models/user');
 var jwt = require('../services/jwt');
-
+var Publication= require('../models/publication');
 
 //Meetodos de prueba
 function home(req, res) {
@@ -258,10 +258,16 @@ async function getCountFollow(user_id) {
         return count;
     });
 
+    var publications = await Publication.count({"user": user_id}).exec((err,count)=>{
+        if(err) return handleError(err);
+        return count;
+    });
+
     return {
 
         following: following,
-        followed: followed
+        followed: followed,
+        publications:publications
     }
 }
 
@@ -316,7 +322,7 @@ function uploadImage(req, res) {
 
                 return res.status(200).send({ user: userUpdated });
 
-            })
+            });
 
         } else {
             return removeFilesOfUploads(res, file_path, 'Extension no valida');

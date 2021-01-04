@@ -44,5 +44,7 @@ api.post('/publication',md_auth.ensureAuth,PublicationController.savePublication
 api.get('/publications/:page?', md_auth.ensureAuth,PublicationController.getPublicationns);
 api.get('/publication/:id', md_auth.ensureAuth,PublicationController.getPublication);
 api.delete('/publication/:id',md_auth.ensureAuth,PublicationController.deletePublication);
+api.post('/upload-image-pub/:id',[md_auth.ensureAuth, mul_upload.single('file')],PublicationController.uploadImage);
+api.get('/get-image-pub/:imageFile', md_auth.ensureAuth, PublicationController.getImageFIle); 
 
 module.exports = api;
