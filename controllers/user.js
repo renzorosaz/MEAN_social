@@ -245,30 +245,26 @@ function getCounters(req, res) {
 
 }
 
-async function getCountFollow(user_id) {
-
-    var following = await Follow.count({ "user": user_id }).exec((err, count) => {
-        if (err) return handleError(err);
-        return count;
-
-    });
-
-    var followed = await Follow.count({ "followed": user_id }).exec((err, count) => {
-        if (err) return handleError(err);
-        return count;
-    });
-
-    var publications = await Publication.count({"user": user_id}).exec((err,count)=>{
-        if(err) return handleError(err);
-        return count;
-    });
-
-    return {
-
-        following: following,
-        followed: followed,
-        publications:publications
+const getCountFollow = async (user_id) => {
+    try{
+        // Lo hice de dos formas. "following" con callback de countDocuments y "followed" con una promesa
+        let following = await Follow.countDocuments({"user": user_id},(err, result) => { return result });
+        let followed = await Follow.countDocuments({"followed": user_id}).then(count => count);
+        let publications = await 
+        Publication.count({"user":user_id})
+        .exec().then(count => {
+          return count;
+          }).catch((err) => {
+            if(err) return handleError(err);
+          });
+ 
+        return { following, followed, publications }
+        
+    } catch(e){
+        console.log(e);
     }
+ 
+    
 }
 
 //Edición de datos de usuario
