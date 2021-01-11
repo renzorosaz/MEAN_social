@@ -8,7 +8,7 @@ var path = require('path');
 var Follow = require('../models/follow');
 var User = require('../models/user');
 var jwt = require('../services/jwt');
-var Publication= require('../models/publication');
+var Publication = require('../models/publication');
 
 //Meetodos de prueba
 function home(req, res) {
@@ -246,25 +246,25 @@ function getCounters(req, res) {
 }
 
 const getCountFollow = async (user_id) => {
-    try{
+    try {
         // Lo hice de dos formas. "following" con callback de countDocuments y "followed" con una promesa
-        let following = await Follow.countDocuments({"user": user_id},(err, result) => { return result });
-        let followed = await Follow.countDocuments({"followed": user_id}).then(count => count);
-        let publications = await 
-        Publication.count({"user":user_id})
-        .exec().then(count => {
-          return count;
-          }).catch((err) => {
-            if(err) return handleError(err);
-          });
- 
+        let following = await Follow.countDocuments({ "user": user_id }, (err, result) => { return result });
+        let followed = await Follow.countDocuments({ "followed": user_id }).then(count => count);
+        let publications = await
+            Publication.count({ "user": user_id })
+                .exec().then(count => {
+                    return count;
+                }).catch((err) => {
+                    if (err) return handleError(err);
+                });
+
         return { following, followed, publications }
-        
-    } catch(e){
+
+    } catch (e) {
         console.log(e);
     }
- 
-    
+
+
 }
 
 //Edición de datos de usuario
@@ -276,17 +276,45 @@ function updateUser(req, res) {
 
     delete update.password;
 
-    if (userId != req.user.sub) {
-        return res.status(500).send({ message: "No tienes permiso para actualizar los datos del usuarios" });
-    }
+    
+    if (userId !== req.user.sub) {
+        return res.status(500).send({
+          message: 'No tiene permisos suficiente para modificar los datos.'
+        });
+      }
+     
+      
+      User.find({ $or: [{ email: update.email }, { nick: update.nick }] }).exec((err,users)=>{
+       
+        var userExiste = false;
+        users.forEach((user)=>{
+          if(user && user._id != userId) {
+            userExiste = true;
+          }
+        });
+     
+        console.log('sha'+userExiste);
+     
+        if(userExiste){
+          console.log('entra');
+          return res.status(404).send({message:'Los datos ya están en uso.'});
+        } 
+        
+        // mongoose me devuelve el objeto user original, por lo cual le tengo que pasar un tercer parametro.(new:true)
+        // para que me vuelva el objeto userUpdated actualizado.
+        User.findByIdAndUpdate(userId, update, { new: true }, (err, userUpdated) => {
+          
+          if (err) return res.status(500).send({ message: 'Error en la petición.' });
+      
+          if (!userUpdated)
+            return res
+              .status(404)
+              .send({ message: 'No se ha podido actualizar el usuario.' });
+      
+          return res.status(200).send({ user: userUpdated });
+        });
+      });
 
-    User.findByIdAndUpdate(userId, update, { new: true }, (err, userUpdated) => {
-        if (err) return res.status(500).send({ message: "Error en la petición" });
-
-        if (!userUpdated) return res.status(404).send({ message: "No se ha podido actualizar el usuario" });
-
-        return res.status(200).send({ user: userUpdated });
-    });
 }
 
 //Subir archivo de imagen //avatar de usuario
